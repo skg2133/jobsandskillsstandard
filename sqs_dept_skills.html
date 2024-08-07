@@ -5,88 +5,129 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Company Departments</title>
     <style>
-      #skills-container {
-        max-width: 600px;
-        margin: 20px auto;
-        padding: 20px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-      }
+        body {
+            font-family: Arial, sans-serif;
+        }
 
-      #department-name {
-        color: #4a4a4a;
-        font-weight: bold;
-      }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
 
-      #skills-list {
-        list-style-type: none;
-        padding: 0;
-      }
+        .department, .sub-department, .skills-category {
+            cursor: pointer;
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+        }
 
-      #skills-list li {
-        margin-bottom: 10px;
-        padding: 10px;
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 3px;
-      }
+        .hidden {
+            display: none;
+        }
 
-      #load-skills {
-        display: block;
-        margin: 20px auto;
-        padding: 10px 20px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      }
+        .skills-category {
+            padding-left: 20px;
+        }
 
-      #load-skills:hover {
-        background-color: #45a049;
-      }
-</style>
+        .skill {
+            padding-left: 40px;
+        }
 
+        .skills-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
 </head>
 <body>
-    <div id="skills-container">
-        <h2>Skills for <span id="department-name"></span></h2>
-        <ul id="skills-list"></ul>
+    <div class="container">
+        <div id="company" class="department">Top Departments in a Company:</div>
+        <div id="departments-container"></div>
     </div>
-
-    <button id="load-skills">Load Skills</button>
     <script>
+        const departments = [
+            'Finance', 'HR', 'IT', 'Product', 'Legal', 'Corporate Strategy',
+            'Customer Service', 'Sales', 'Marketing', 'Operations'
+        ];
 
-
-            $.ajax({
-              url: '/s/finance_skills.json',
-              method: 'GET',
-              dataType: 'json',
-              success: function(data) {
-                displaySkills(data);
-              },
-              error: function(jqXHR, textStatus, errorThrown) {
-                console.error('Error loading JSON:', textStatus, errorThrown);
-              }
-
-
-          function displaySkills(data) {
-            var departmentName = $('#department-name');
-            var skillsList = $('#skills-list');
-
-            departmentName.text(data.department || 'Finance');
-            skillsList.empty();
-
-            if (data.skills && data.skills.length > 0) {
-              $.each(data.skills, function(index, skill) {
-                skillsList.append($('<li>').text(skill));
-              });
-            } else {
-              skillsList.append($('<li>').text('No skills found'));
-            }
-          }
+        document.addEventListener('DOMContentLoaded', () => {
+            const departmentsContainer = document.getElementById('departments-container');
+            departments.forEach(dept => {
+                const deptDiv = document.createElement('div');
+                deptDiv.id = `${dept.toLowerCase()}-dept`;
+                deptDiv.className = 'department';
+                deptDiv.textContent = dept;
+                deptDiv.addEventListener('click', () => {
+                    fetch(`https://raw.githubusercontent.com/skg2133/jobsandskillsstandard/main/${dept.toLowerCase().replace(' ', '_')}_skills.json`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log(`Data for ${dept}:`, data);  // Log the fetched data
+                            const skills = data[dept];
+                            console.log(`Skills for ${dept}:`, skills);  // Log the extracted skills
+                            if (!skills) {
+                                throw new Error(`No skills found for department: ${dept}`);
+                            }
+                            toggleDisplay(skills, deptDiv, 'sub-department');
+                        })
+                        .catch(error => {
+                            console.error('Error loading skills data:', error);
+                            alert(`Error loading skills data for ${dept}: ${error.message}`);
+                        });
+                });
+                departmentsContainer.appendChild(deptDiv);
+            });
         });
-</script>
+
+        function toggleDisplay(skillsObj, parentElement, className) {
+            console.log(`Toggling display for ${className}:`, skillsObj);  // Log the skills object
+            const existingElements = parentElement.querySelectorAll(`.${className}`);
+            if (existingElements.length > 0) {
+                existingElements.forEach(el => el.remove());
+            } else {
+                for (const [key, value] of Object.entries(skillsObj)) {
+                    const div = document.createElement('div');
+                    div.className = className;
+                    div.textContent = key;
+
+                    if (Array.isArray(value)) {
+                        div.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            toggleSkills(value, div);
+                        });
+                    } else {
+                        div.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            toggleDisplay(value, div, className === 'sub-department' ? 'skills-category' : 'skill');
+                        });
+                    }
+                    parentElement.appendChild(div);
+                }
+            }
+        }
+
+        function toggleSkills(skillsArray, parentElement) {
+            console.log('Toggling skills:', skillsArray);  // Log the skills array
+            const existingSkills = parentElement.querySelector('.skills-list');
+            if (existingSkills) {
+                existingSkills.remove();
+            } else {
+                const ul = document.createElement('ul');
+                ul.className = 'skills-list';
+                skillsArray.forEach(skill => {
+                    const li = document.createElement('li');
+                    li.className = 'skill';
+                    li.textContent = skill;
+                    ul.appendChild(li);
+                });
+                parentElement.appendChild(ul);
+            }
+        }
+    </script>
 </body>
 </html>

@@ -59,7 +59,7 @@
                 deptDiv.className = 'department';
                 deptDiv.textContent = dept;
                 deptDiv.addEventListener('click', () => {
-                    fetch(`../jobs-skills-data/${dept.toLowerCase().replace(' ', '_')}_skills.json`)
+                    fetch(`https://github.com/skg2133/jobsandskillsstandard/blob/main/${dept.toLowerCase().replace(' ', '_')}_skills.json`)
                         .then(response => {
                             if (!response.ok) {
                                 throw new Error(`HTTP error! Status: ${response.status}`);
